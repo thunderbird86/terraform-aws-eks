@@ -35,3 +35,9 @@ data:
         - system:nodes
         - system:node-proxier
 %{ endfor ~}
+%{ for role in additional_admin_aws_role_arns ~}
+    - rolearn: ${role}
+      username: admin
+      groups:
+        - system:masters
+%{ endfor ~}

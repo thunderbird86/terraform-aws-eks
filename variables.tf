@@ -17,6 +17,15 @@ variable "prefix_separator" {
 }
 
 ################################################################################
+# Encryption
+################################################################################
+
+variable "kms_tags" {
+  description = "A map of additional tags to add to the kms key"
+  default     = {}
+}
+
+################################################################################
 # Cluster
 ################################################################################
 
@@ -80,13 +89,9 @@ variable "cluster_service_ipv4_cidr" {
   default     = null
 }
 
-variable "cluster_encryption_config" {
-  description = "Configuration block with encryption configuration for the cluster"
-  type = list(object({
-    provider_key_arn = string
-    resources        = list(string)
-  }))
-  default = []
+variable "provider_key_arn" {
+  description = "KMS key arn for the cluster encryption configuration"
+  default     = ""
 }
 
 variable "attach_cluster_encryption_policy" {
@@ -421,4 +426,14 @@ variable "eks_managed_node_group_defaults" {
   description = "Map of EKS managed node group default configurations"
   type        = any
   default     = {}
+}
+
+####
+variable "additional_admin_aws_role_arns" {
+  type = list(string)
+  default = []
+}
+
+variable "create_kms_key" {
+  default = false
 }

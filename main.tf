@@ -26,7 +26,7 @@ resource "aws_eks_cluster" "this" {
   }
 
   dynamic "encryption_config" {
-    for_each = toset(var.cluster_encryption_config)
+    for_each = toset(local.cluster_encryption_config)
 
     content {
       provider {
@@ -63,45 +63,6 @@ resource "aws_cloudwatch_log_group" "this" {
   kms_key_id        = var.cloudwatch_log_group_kms_key_id
 
   tags = var.tags
-}
-
-################################################################################
-# Cluster Security Group
-# Defaults follow https://docs.aws.amazon.com/eks/latest/userguide/sec-group-reqs.html
-################################################################################
-
-locals {
-  cluster_sg_name   = coalesce(var.cluster_security_group_name, "${var.cluster_name}-cluster")
-  create_cluster_sg = var.create && var.create_cluster_security_group
-
-  cluster_security_group_id = local.create_cluster_sg ? aws_security_group.cluster[0].id : var.cluster_security_group_id
-
-  cluster_security_group_rules = {
-    ingress_nodes_443 = {
-      description                = "Node groups to cluster API"
-      protocol                   = "tcp"
-      from_port                  = 443
-      to_port                    = 443
-      type                       = "ingress"
-      source_node_security_group = true
-    }
-    egress_nodes_443 = {
-      description                = "Cluster API to node groups"
-      protocol                   = "tcp"
-      from_port                  = 443
-      to_port                    = 443
-      type                       = "egress"
-      source_node_security_group = true
-    }
-    egress_nodes_kubelet = {
-      description                = "Cluster API to node kubelets"
-      protocol                   = "tcp"
-      from_port                  = 10250
-      to_port                    = 10250
-      type                       = "egress"
-      source_node_security_group = true
-    }
-  }
 }
 
 resource "aws_security_group" "cluster" {
@@ -165,21 +126,6 @@ resource "aws_iam_openid_connect_provider" "oidc_provider" {
   )
 }
 
-################################################################################
-# IAM Role
-################################################################################
-
-locals {
-  create_iam_role   = var.create && var.create_iam_role
-  iam_role_name     = coalesce(var.iam_role_name, "${var.cluster_name}-cluster")
-  policy_arn_prefix = "arn:${data.aws_partition.current.partition}:iam::aws:policy"
-
-  cluster_encryption_policy_name = coalesce(var.cluster_encryption_policy_name, "${local.iam_role_name}-ClusterEncryption")
-
-  # TODO - hopefully this can be removed once the AWS endpoint is named properly in China
-  # https://github.com/terraform-aws-modules/terraform-aws-eks/issues/1904
-  dns_suffix = coalesce(var.cluster_iam_role_dns_suffix, data.aws_partition.current.dns_suffix)
-}
 
 data "aws_iam_policy_document" "assume_role_policy" {
   count = var.create && var.create_iam_role ? 1 : 0
@@ -223,14 +169,14 @@ resource "aws_iam_role_policy_attachment" "this" {
 
 # Using separate attachment due to `The "for_each" value depends on resource attributes that cannot be determined until apply`
 resource "aws_iam_role_policy_attachment" "cluster_encryption" {
-  count = local.create_iam_role && var.attach_cluster_encryption_policy && length(var.cluster_encryption_config) > 0 ? 1 : 0
+  count = local.create_iam_role && var.attach_cluster_encryption_policy && length(local.cluster_encryption_config) > 0 ? 1 : 0
 
   policy_arn = aws_iam_policy.cluster_encryption[0].arn
   role       = aws_iam_role.this[0].name
 }
 
 resource "aws_iam_policy" "cluster_encryption" {
-  count = local.create_iam_role && var.attach_cluster_encryption_policy && length(var.cluster_encryption_config) > 0 ? 1 : 0
+  count = local.create_iam_role && var.attach_cluster_encryption_policy && length(local.cluster_encryption_config) > 0 ? 1 : 0
 
   name        = var.cluster_encryption_policy_use_name_prefix ? null : local.cluster_encryption_policy_name
   name_prefix = var.cluster_encryption_policy_use_name_prefix ? local.cluster_encryption_policy_name : null
@@ -248,7 +194,7 @@ resource "aws_iam_policy" "cluster_encryption" {
           "kms:DescribeKey",
         ]
         Effect   = "Allow"
-        Resource = [for config in var.cluster_encryption_config : config.provider_key_arn]
+        Resource = [for config in local.cluster_encryption_config : config.provider_key_arn]
       },
     ]
   })
