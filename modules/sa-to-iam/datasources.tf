@@ -1,6 +1,6 @@
-data "aws_iam_policy_document" "load_balancer_controller" {
+data "aws_iam_policy_document" "this" {
   statement {
-    sid = "RoleForEksLBController"
+    sid    = var.policy_sid
     effect = "Allow"
 
     actions = [
@@ -9,23 +9,19 @@ data "aws_iam_policy_document" "load_balancer_controller" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.oidc_provider[0].arn]
+      identifiers = [var.aws_iam_openid_connect_provider_arn]
     }
 
     condition {
       test     = "StringEquals"
-      variable = format("%s:%s", aws_iam_openid_connect_provider.oidc_provider[0].url, "aud")
+      variable = format("%s:%s", var.aws_iam_openid_connect_provider_url, "aud")
       values   = ["sts.amazonaws.com"]
     }
 
     condition {
       test     = "StringEquals"
-      variable = format("%s:%s", aws_iam_openid_connect_provider.oidc_provider[0].url, "sub")
-      values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
+      variable = format("%s:%s", var.aws_iam_openid_connect_provider_url, "sub")
+      values   = [format("%s:%s:%s", "system:serviceaccount", var.namespace, var.role_name)]
     }
   }
-}
-
-data "aws_iam_policy" "aws_eks_lb_controller_policy" {
-  name = "AWSLoadBalancerControllerIAMPolicy"
 }
