@@ -409,5 +409,3 @@ variable "eks_managed_node_group_defaults" {
   type        = any
   default     = {}
 }
-
-

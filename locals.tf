@@ -186,9 +186,9 @@ locals {
 locals {
   kubeconfig = templatefile("${path.module}/templates/kubeconf.tpl",
     {
-      aws_eks_cluster_this_endpoint = aws_eks_cluster.this.0.endpoint
+      aws_eks_cluster_this_endpoint                   = aws_eks_cluster.this.0.endpoint
       aws_eks_cluster_this_certificate_authority_data = aws_eks_cluster.this.0.certificate_authority.0.data
-      cluster_name = var.cluster_name
+      cluster_name                                    = var.cluster_name
     }
   )
 }
