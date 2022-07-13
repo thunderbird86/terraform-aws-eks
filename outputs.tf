@@ -84,6 +84,11 @@ output "oidc_provider_arn" {
   value       = try(aws_iam_openid_connect_provider.oidc_provider[0].arn, "")
 }
 
+output "oidc_provider_url" {
+  description = "The URL of the OIDC Provider if `enable_irsa = true`"
+  value       = try(aws_iam_openid_connect_provider.oidc_provider[0].url, "")
+}
+
 ################################################################################
 # IAM Role
 ################################################################################
@@ -174,6 +179,7 @@ output "aws_auth_configmap_yaml" {
       self_managed_role_arns                  = [for group in module.self_managed_node_group : group.iam_role_arn if group.platform != "windows"]
       win32_self_managed_role_arns            = [for group in module.self_managed_node_group : group.iam_role_arn if group.platform == "windows"]
       fargate_profile_pod_execution_role_arns = [for group in module.fargate_profile : group.fargate_profile_pod_execution_role_arn]
+      additional_admin_aws_role_arns          = var.additional_admin_aws_role_arns
     }
   )
 }
