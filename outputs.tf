@@ -84,6 +84,11 @@ output "oidc_provider_arn" {
   value       = try(aws_iam_openid_connect_provider.oidc_provider[0].arn, "")
 }
 
+output "oidc_provider_url" {
+  description = "The URL of the OIDC Provider if `enable_irsa = true`"
+  value       = try(aws_iam_openid_connect_provider.oidc_provider[0].url, "")
+}
+
 ################################################################################
 # IAM Role
 ################################################################################
@@ -178,13 +183,3 @@ output "aws_auth_configmap_yaml" {
     }
   )
 }
-
-################################################################################
-# SA to IAM module
-################################################################################
-
-output "aws_eks_lb_controller_policy" {
-  description = ""
-  value = ""
-}
-

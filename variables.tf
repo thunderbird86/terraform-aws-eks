@@ -10,11 +10,6 @@ variable "tags" {
   default     = {}
 }
 
-variable "prefix_separator" {
-  description = "The separator to use between the prefix and the generated timestamp for resource names"
-  type        = string
-  default     = "-"
-}
 
 ################################################################################
 # Encryption
@@ -23,6 +18,11 @@ variable "prefix_separator" {
 variable "kms_tags" {
   description = "A map of additional tags to add to the kms key"
   default     = {}
+}
+
+variable "create_kms_key" {
+  description = "Whether to create KMS key for cluster Encryption"
+  default     = false
 }
 
 ################################################################################
@@ -112,6 +112,12 @@ variable "cluster_timeouts" {
   default     = {}
 }
 
+variable "additional_admin_aws_role_arns" {
+  description = "List of IAM Roles to set Admin access for created EKS cluster"
+  type        = list(string)
+  default     = []
+}
+
 ################################################################################
 # CloudWatch Log Group
 ################################################################################
@@ -162,12 +168,6 @@ variable "cluster_security_group_name" {
   default     = null
 }
 
-variable "cluster_security_group_use_name_prefix" {
-  description = "Determines whether cluster security group name (`cluster_security_group_name`) is used as a prefix"
-  type        = string
-  default     = true
-}
-
 variable "cluster_security_group_description" {
   description = "Description of the cluster security group created"
   type        = string
@@ -216,12 +216,6 @@ variable "node_security_group_name" {
   description = "Name to use on node security group created"
   type        = string
   default     = null
-}
-
-variable "node_security_group_use_name_prefix" {
-  description = "Determines whether node security group name (`node_security_group_name`) is used as a prefix"
-  type        = string
-  default     = true
 }
 
 variable "node_security_group_description" {
@@ -286,12 +280,6 @@ variable "iam_role_name" {
   default     = null
 }
 
-variable "iam_role_use_name_prefix" {
-  description = "Determines whether the IAM role name (`iam_role_name`) is used as a prefix"
-  type        = string
-  default     = true
-}
-
 variable "iam_role_path" {
   description = "Cluster IAM role path"
   type        = string
@@ -328,12 +316,6 @@ variable "iam_role_tags" {
   description = "A map of additional tags to add to the IAM role created"
   type        = map(string)
   default     = {}
-}
-
-variable "cluster_encryption_policy_use_name_prefix" {
-  description = "Determines whether cluster encryption policy name (`cluster_encryption_policy_name`) is used as a prefix"
-  type        = string
-  default     = true
 }
 
 variable "cluster_encryption_policy_name" {
@@ -428,12 +410,4 @@ variable "eks_managed_node_group_defaults" {
   default     = {}
 }
 
-####
-variable "additional_admin_aws_role_arns" {
-  type = list(string)
-  default = []
-}
 
-variable "create_kms_key" {
-  default = false
-}

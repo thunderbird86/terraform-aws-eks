@@ -1,12 +1,9 @@
-#resource "kubernetes_config_map" "aws_auth" {
-#  depends_on = [aws_eks_cluster.this]
-#
-#  metadata {
-#    name      = "aws-auth"
-#    namespace = "kube-system"
-#  }
-#
-#  data = {
-#    mapRoles = local.aws_auth
-#  }
-#}
+resource "local_file" "aws_auth" {
+  content  = local.aws_auth
+  filename = "${path.cwd}/aws-auth.yaml"
+}
+
+resource "local_file" "kubeconfig" {
+  content  = local.kubeconfig
+  filename = "${path.cwd}/kubeconfig"
+}

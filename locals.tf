@@ -38,6 +38,105 @@ locals {
 }
 
 ################################################################################
+# Node Security Group
+# Defaults follow https://docs.aws.amazon.com/eks/latest/userguide/sec-group-reqs.html
+# Plus NTP/HTTPS (otherwise nodes fail to launch)
+################################################################################
+
+locals {
+  node_sg_name   = coalesce(var.node_security_group_name, "${var.cluster_name}-node")
+  create_node_sg = var.create && var.create_node_security_group
+
+  node_security_group_id = local.create_node_sg ? aws_security_group.node[0].id : var.node_security_group_id
+
+  node_security_group_rules = {
+    egress_cluster_443 = {
+      description                   = "Node groups to cluster API"
+      protocol                      = "tcp"
+      from_port                     = 443
+      to_port                       = 443
+      type                          = "egress"
+      source_cluster_security_group = true
+    }
+    ingress_cluster_443 = {
+      description                   = "Cluster API to node groups"
+      protocol                      = "tcp"
+      from_port                     = 443
+      to_port                       = 443
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
+    ingress_cluster_kubelet = {
+      description                   = "Cluster API to node kubelets"
+      protocol                      = "tcp"
+      from_port                     = 10250
+      to_port                       = 10250
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
+    ingress_self_coredns_tcp = {
+      description = "Node to node CoreDNS"
+      protocol    = "tcp"
+      from_port   = 53
+      to_port     = 53
+      type        = "ingress"
+      self        = true
+    }
+    egress_self_coredns_tcp = {
+      description = "Node to node CoreDNS"
+      protocol    = "tcp"
+      from_port   = 53
+      to_port     = 53
+      type        = "egress"
+      self        = true
+    }
+    ingress_self_coredns_udp = {
+      description = "Node to node CoreDNS"
+      protocol    = "udp"
+      from_port   = 53
+      to_port     = 53
+      type        = "ingress"
+      self        = true
+    }
+    egress_self_coredns_udp = {
+      description = "Node to node CoreDNS"
+      protocol    = "udp"
+      from_port   = 53
+      to_port     = 53
+      type        = "egress"
+      self        = true
+    }
+    egress_https = {
+      description      = "Egress all HTTPS to internet"
+      protocol         = "tcp"
+      from_port        = 443
+      to_port          = 443
+      type             = "egress"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = var.cluster_ip_family == "ipv6" ? ["::/0"] : null
+    }
+    egress_ntp_tcp = {
+      description      = "Egress NTP/TCP to internet"
+      protocol         = "tcp"
+      from_port        = 123
+      to_port          = 123
+      type             = "egress"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = var.cluster_ip_family == "ipv6" ? ["::/0"] : null
+    }
+    egress_ntp_udp = {
+      description      = "Egress NTP/UDP to internet"
+      protocol         = "udp"
+      from_port        = 123
+      to_port          = 123
+      type             = "egress"
+      cidr_blocks      = ["0.0.0.0/0"]
+      ipv6_cidr_blocks = var.cluster_ip_family == "ipv6" ? ["::/0"] : null
+    }
+  }
+}
+
+################################################################################
 # IAM Role
 ################################################################################
 
@@ -76,6 +175,20 @@ locals {
       win32_self_managed_role_arns            = [for group in module.self_managed_node_group : group.iam_role_arn if group.platform == "windows"]
       fargate_profile_pod_execution_role_arns = [for group in module.fargate_profile : group.fargate_profile_pod_execution_role_arn]
       additional_admin_aws_role_arns          = var.additional_admin_aws_role_arns
+    }
+  )
+}
+
+################################################################################
+# EKS Kubeconfig
+################################################################################
+
+locals {
+  kubeconfig = templatefile("${path.module}/templates/kubeconf.tpl",
+    {
+      aws_eks_cluster_this_endpoint = aws_eks_cluster.this.0.endpoint
+      aws_eks_cluster_this_certificate_authority_data = aws_eks_cluster.this.0.certificate_authority.0.data
+      cluster_name = var.cluster_name
     }
   )
 }
