@@ -155,6 +155,8 @@ module "eks_managed_node_group" {
   instance_types       = try(each.value.instance_types, var.eks_managed_node_group_defaults.instance_types, null)
   labels               = try(each.value.labels, var.eks_managed_node_group_defaults.labels, null)
 
+  node_repair_config = each.value.node_repair_config
+
   remote_access = try(each.value.remote_access, var.eks_managed_node_group_defaults.remote_access, {})
   taints        = try(each.value.taints, var.eks_managed_node_group_defaults.taints, {})
   update_config = try(each.value.update_config, var.eks_managed_node_group_defaults.update_config, {})

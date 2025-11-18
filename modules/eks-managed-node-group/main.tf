@@ -117,20 +117,6 @@ resource "aws_launch_template" "this" {
     }
   }
 
-  dynamic "elastic_gpu_specifications" {
-    for_each = var.elastic_gpu_specifications != null ? [var.elastic_gpu_specifications] : []
-    content {
-      type = elastic_gpu_specifications.value.type
-    }
-  }
-
-  dynamic "elastic_inference_accelerator" {
-    for_each = var.elastic_inference_accelerator != null ? [var.elastic_inference_accelerator] : []
-    content {
-      type = elastic_inference_accelerator.value.type
-    }
-  }
-
   dynamic "enclave_options" {
     for_each = var.enclave_options != null ? [var.enclave_options] : []
     content {
@@ -278,6 +264,29 @@ resource "aws_eks_node_group" "this" {
     min_size     = var.min_size
     max_size     = var.max_size
     desired_size = var.desired_size
+  }
+
+  dynamic "node_repair_config" {
+    for_each = var.node_repair_config != null ? [var.node_repair_config] : []
+
+    content {
+      enabled                                 = node_repair_config.value.enabled
+      max_parallel_nodes_repaired_count       = node_repair_config.value.max_parallel_nodes_repaired_count
+      max_parallel_nodes_repaired_percentage  = node_repair_config.value.max_parallel_nodes_repaired_percentage
+      max_unhealthy_node_threshold_count      = node_repair_config.value.max_unhealthy_node_threshold_count
+      max_unhealthy_node_threshold_percentage = node_repair_config.value.max_unhealthy_node_threshold_percentage
+
+      dynamic "node_repair_config_overrides" {
+        for_each = node_repair_config.value.node_repair_config_overrides != null ? node_repair_config.value.node_repair_config_overrides : []
+
+        content {
+          min_repair_wait_time_mins = node_repair_config_overrides.value.min_repair_wait_time_mins
+          node_monitoring_condition = node_repair_config_overrides.value.node_monitoring_condition
+          node_unhealthy_reason     = node_repair_config_overrides.value.node_unhealthy_reason
+          repair_action             = node_repair_config_overrides.value.repair_action
+        }
+      }
+    }
   }
 
   # Optional
